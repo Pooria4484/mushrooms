@@ -11,9 +11,9 @@ def dht():
         buff=load('dht')
         val=load('dht_pin')
         if int(buff)==22:
-            d=DHT22(Pin(int(val)))
+            d=DHT22(Pin(11))
         else :
-            d=DHT11(Pin(int(val)))           
+            d=DHT11(Pin()11)           
     except KeyError:
         d=None
     return d    
