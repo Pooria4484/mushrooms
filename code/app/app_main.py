@@ -21,7 +21,7 @@ tempTimer = Timer(0)
 fanTimer = Timer(1)
 mistTimer = Timer(2)
 from gc import collect,mem_free
-wdt = None#WDT(timeout=15000)  # enable wdt it with a timeout of 15s
+wdt = WDT(timeout=15000)  # enable wdt it with a timeout of 15s
 ui=UI(oled,wdt)
 print('MEM Free',mem_free())
 collect()
