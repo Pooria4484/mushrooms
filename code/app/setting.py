@@ -2,7 +2,7 @@ from save import *
 from dht import DHT22,DHT11
 from machine import Pin
 
-def set_dht(p=32,type='11'):#set dht sensor pin and type
+def set_dht(p=32,type='22'):#set dht sensor pin and type
     save('dht',type)
     save('dht_pin',str(p))
 
@@ -11,9 +11,9 @@ def dht():
         buff=load('dht')
         val=load('dht_pin')
         if int(buff)==22:
-            d=DHT22(Pin(11))
+            d=DHT22(Pin(int(val)))
         else :
-            d=DHT11(Pin()11)           
+            d=DHT11(Pin(int(val)))           
     except KeyError:
         d=None
     return d    

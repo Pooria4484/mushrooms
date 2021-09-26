@@ -13,10 +13,8 @@ try:
     from . version import version as app_ver
 except ImportError:
     print('no release it is debug')
-dh=dht()#dht set pin and type default pin 32 - type dht22 
-if dh==None:
-    set_dht()
-    dh=dht()
+from dht import DHT11
+dh=DHT11(Pin(32))
 server=asocket.Server()#socket server object
 loop=uasyncio.get_event_loop()
 tempTimer = Timer(0)
