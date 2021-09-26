@@ -5,7 +5,7 @@ import uasyncio
 import asocket
 from save import *
 from wifi import *
-
+from math import fabs as abs
 
 from wifi import ap
 ap()
@@ -21,7 +21,7 @@ tempTimer = Timer(0)
 fanTimer = Timer(1)
 mistTimer = Timer(2)
 from gc import collect,mem_free
-wdt = WDT(timeout=15000)  # enable wdt it with a timeout of 15s
+wdt = None#WDT(timeout=15000)  # enable wdt it with a timeout of 15s
 ui=UI(oled,wdt)
 print('MEM Free',mem_free())
 collect()
@@ -79,7 +79,8 @@ async def main():
     mtrefresh=False
     thErrHandled=False
     errBuzzCnt=0 
-    
+    t=[0,0,0,0,0]
+    tn=0
     print(rtc.datetime()[4:7])
 
     if tte:
@@ -276,7 +277,7 @@ async def main():
         else:
             menu_cnt=0    
 
-        if tcnt%13==0:
+        if tcnt%3==0:
             
             if mtrefresh:
                 mtrefresh=False
@@ -309,7 +310,12 @@ async def main():
                     try:
                         dh.measure()    
                         huc=dh.humidity()
-                        tec=dh.temperature()
+                        t[0]=t[1]
+                        t[1]=t[2]
+                        t[2]=t[3]
+                        t[3]=t[4]
+                        t[4]=dh.temperature()
+                        tn+=1
                         therr=False                    
                         if huc<=10:
                             therrcnt+=1    
@@ -317,9 +323,8 @@ async def main():
                             err=0#resolve error
                             ui.set_err(0)
                         therrcnt=0
-                        
-
                     except Exception as e:
+                        #print(e)
                         therrcnt+=1
                         if therrcnt>30:#wait for 30 cnt
                             therr=True                    
@@ -327,6 +332,46 @@ async def main():
                             if err==0:
                                 ui.set_err(1)#show error
                                 err=1
+                    if tn>=5:
+                        tn=0
+                        dm=0
+                        print(t)
+                        print(dm,'abs1')
+                        D43=abs(t[4]-t[3])
+                        D41=abs(t[1]-t[4])
+                        if D43>D41:
+                            dm=D43
+                        else:    
+                            dm=D43
+                        D42=abs(t[2]-t[4])
+                        if D42>dm:
+                            dm=D42
+                        D40=abs(t[0]-t[4])
+                        if D40>dm:
+                            dm=D40
+                        D31=abs(t[3]-t[1])
+                        if D31>dm:
+                            dm=D31
+                        D32=abs(t[2]-t[3])
+                        if D32>dm:
+                            dm=D32
+                        D30=abs(t[3]-t[0])
+                        if D30>dm:
+                            dm=D30
+                        D21=abs(t[1]-t[2])
+                        if D21>dm:
+                            dm=D21
+                        D20=abs(t[0]-t[2])
+                        if D20>dm:
+                            dm=D20
+                        D10=abs(t[0]-t[1])
+                        if D10>dm:
+                            dm=D10
+                        print(dm,'abs')
+                        if  dm<2:
+                            tec=(t[0]+t[1]+t[2]+t[3]+t[4])/5    
+                    
+                                    
                 if not therr and therrcnt==0:#if temp and hum sensor has no error and errcnt is zero show tec and huc
                     ui.set_temp_hum(tec,huc)
      
@@ -630,24 +675,29 @@ async def main():
                         server.send(buff)                
 
 
-            if tcnt%100==0:
+            if tcnt%10==0:
                 if tse and (not tte):#if temp system enabled and temp timer disabled
                     if not therr:#if temp has no err
-                        if tec>(teg+3.0):#vary very hot
-                            if cooler_speed()==0:
+                        if tec>=(teg+3.0):#vary very hot
+                            print('very hot')
+                            if cooler_speed()==0 or cooler_water()==0:
                                 cooler_speed(1)
                                 cooler_water(1)
                                 cooler_motor(1)
-                        elif tec>(teg+1.0):#vary very hot
-                            if cooler_water()==0:
+                                
+                        elif tec>=(teg+1.0):#vary very hot
+                            print('hot') 
+                            if cooler_water()==0 or cooler_speed()==1:
                                 cooler_speed(0)
                                 cooler_water(1)
-                                cooler_motor(1)        
-                        elif tec<(teg-1.0):#vary very hot
+                                cooler_motor(1)  
+                                     
+                        elif tec<=(teg-1.0):#vary very hot
+                            print('cold') 
                             if cooler_water()==1:
                                 cooler_speed(0)
                                 cooler_water(0)
-                                cooler_motor(0)        
+                                cooler_motor(0)   
                 #         if tec>(teg+3.0):#vary very hot
 
 
