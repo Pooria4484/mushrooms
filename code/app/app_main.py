@@ -5,6 +5,7 @@ import uasyncio
 import asocket
 from save import *
 from wifi import *
+from math import abs
 
 
 from wifi import ap
@@ -75,10 +76,14 @@ async def main():
     ttfast=getttfast()#temp timer fast time
     etse=getetse()#external temp sensor enabl
     ftrefresh=False #timers value changed
+    t=[0,0,0,0,0]
+    tt=0
+    tn=0
     ttrefresh=False
     mtrefresh=False
     thErrHandled=False
     errBuzzCnt=0 
+    
     print(rtc.datetime()[4:7])
 
     if tte:
@@ -306,9 +311,22 @@ async def main():
                 etse=False
                 if not etse:
                     try:
+                        
                         dh.measure()    
                         huc=dh.humidity()
-                        tec=dh.temperature()
+                        tt=dh.temperature()
+                        t[tn]=tt
+                        if tn<4:
+                            tn+=1
+                        else:
+                            tn=0
+                            d1=abs(t[0]-t[1])
+                            d2=abs(t[1]-t[2])
+                            d3=abs(t[2]-t[3])
+                            d4=abs(t[1]-t[4])
+                            if d1<2 and d2<2 and d3<2 and d4<2:
+                                tec=(t[4]+t[3]+t[2]+t[1]+t[0])/5
+                        #tec=dh.temperature()
                         therr=False                    
                         if huc<=10:
                             therrcnt+=1    
@@ -629,76 +647,80 @@ async def main():
                         server.send(buff)                
 
 
-            if tcnt%100==0:
+            if tcnt%10==0:
+                heater_fan.off()
+                heater_valve.off()
                 if tse and (not tte):#if temp system enabled and temp timer disabled
                     if not therr:#if temp has no err
-                        if tec>(teg+3.0):#vary very hot
-
-
-                            if(heater_fan.value()==1):
-                                heater_fan.off()
-                                # await uasyncio.sleep_ms(250)
-                                heater_valve.off()
-                                # await uasyncio.sleep_ms(250)
+                        if tec>(teg+3.0):#vary very hot 
+                            if cooler_speed()==0:
+                                cooler_speed(1)
+                                cooler_motor(1)
+                                cooler_water(1)
+                        elif tec>(teg+1.0):        
+                            if cooler_water()==0:
+                                cooler_speed(0)
+                                cooler_motor(1)
+                                cooler_water(1)
+                        elif tec<(teg-1.0):        
+                            if cooler_water()==0:
+                                cooler_speed(0)
+                                cooler_motor(0)
+                                cooler_water(0)
+                        # if tec>(teg+3.0):#vary very hot
+                        #     if(heater_fan.value()==1):
+                        #         heater_fan.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         heater_valve.off()
+                        #         # await uasyncio.sleep_ms(250)
                             
-                            if(cooler_water.value()!=1):
-                                cooler_water.on()
-                                # await uasyncio.sleep_ms(250)
-                                cooler_motor.on()
-                            if(cooler_speed.value()!=1):                    
-                                # await uasyncio.sleep_ms(250)
-                                cooler_speed.on()
-
-
-                        elif tec>(teg+1.5):#ver hot
-
-                            if(heater_fan.value()==1):
-                                heater_fan.off()
-                                # await uasyncio.sleep_ms(250)
-                                heater_valve.off()
-                                # await uasyncio.sleep_ms(250)
-                                            
-                            if(cooler_motor.value()!=1):
-                                cooler_water.on()
-                                # await uasyncio.sleep_ms(250)
-                                cooler_motor.on()
-                                # await uasyncio.sleep_ms(250)
-                            if(cooler_speed.value()==1):                        
-                                cooler_speed.off()
-
-
-                        elif tec>(teg+0.8):#medium
-                            if(heater_fan.value()==1):
-                                heater_fan.off()
-                                # await uasyncio.sleep_ms(250)
-                                heater_valve.off()
-                                # await uasyncio.sleep_ms(250)        
-
-                        elif tec<(teg-2.0):#very cold
-                            if(heater_fan.value()!=1):
-                                heater_fan.on()
-                                # await uasyncio.sleep_ms(250)
-                                heater_valve.on()
-                                # await uasyncio.sleep_ms(250)
-
-
-                            if(cooler_motor.value()==1):
-                                cooler_water.off()
-                                # await uasyncio.sleep_ms(250)
-                                cooler_motor.off()
-                                # await uasyncio.sleep_ms(250)
-                            if(cooler_speed.value()==1):                        
-                                cooler_speed.off()
-
-
-                        elif tec<(teg-1.0):#cold
-                            if(cooler_motor.value()==1):
-                                cooler_water.off()
-                                # await uasyncio.sleep_ms(250)
-                                cooler_motor.off()
-                                # await uasyncio.sleep_ms(250)
-                            if(cooler_speed.value()==1):                        
-                                cooler_speed.off()            
+                        #     if(cooler_water.value()!=1):
+                        #         cooler_water.on()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         cooler_motor.on()
+                        #     if(cooler_speed.value()!=1):                    
+                        #         # await uasyncio.sleep_ms(250)
+                        #         cooler_speed.on()
+                        # elif tec>(teg+1.5):#ver hot
+                        #     if(heater_fan.value()==1):
+                        #         heater_fan.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         heater_valve.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #     if(cooler_motor.value()!=1):
+                        #         cooler_water.on()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         cooler_motor.on()
+                        #         # await uasyncio.sleep_ms(250)
+                        #     if(cooler_speed.value()==1):                        
+                        #         cooler_speed.off()
+                        # elif tec>(teg+0.8):#medium
+                        #     if(heater_fan.value()==1):
+                        #         heater_fan.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         heater_valve.off()
+                        #         # await uasyncio.sleep_ms(250)        
+                        # elif tec<(teg-2.0):#very cold
+                        #     if(heater_fan.value()!=1):
+                        #         heater_fan.on()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         heater_valve.on()
+                        #         # await uasyncio.sleep_ms(250)
+                        #     if(cooler_motor.value()==1):
+                        #         cooler_water.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         cooler_motor.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #     if(cooler_speed.value()==1):                        
+                        #         cooler_speed.off()
+                        # elif tec<(teg-1.0):#cold
+                        #     if(cooler_water.value()==1):
+                        #         cooler_water.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #         cooler_motor.off()
+                        #         # await uasyncio.sleep_ms(250)
+                        #     if(cooler_speed.value()==1):                        
+                        #         cooler_speed.off()            
                     else:#temp err
                         if (not tahandle):#temp error auto handle
                             cooler_motor.off()
